@@ -9,7 +9,7 @@ Golang Rest API sample with MySQL integration using Framework Gin and Gorm.
 
 ### Installing
 
-First step need to copy .env.exmplae into .env file to create envirionment variable.
+First step need to copy .env.exmplae into .env file to create environment variable.
 
 ```
 cp .env.example .env
