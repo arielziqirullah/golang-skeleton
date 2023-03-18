@@ -3,13 +3,14 @@
 ## About <a name = "about"></a>
 
 Golang Rest API sample with MySQL integration using Framework Gin and Gorm.
+This is only a sample base project, not yet production ready, development is still ongoing.
 
 ## Getting Started <a name = "getting_started"></a>
 
 
 ### Running
 
-First step need to copy .env.exmplae into .env file to create environment variable.
+First step need to copy .env.example into .env file to create environment variable.
 
 ```
 cp .env.example .env
