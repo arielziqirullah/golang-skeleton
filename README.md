@@ -7,7 +7,7 @@ Golang Rest API sample with MySQL integration using Framework Gin and Gorm.
 ## Getting Started <a name = "getting_started"></a>
 
 
-### Installing
+### Running
 
 First step need to copy .env.exmplae into .env file to create environment variable.
 
@@ -43,3 +43,14 @@ REFRESH_TOKEN_MAXAGE=
 JWT_SECRET=
 ```
 
+Run App without build
+
+```
+go run main.go
+```
+
+Run Build
+```
+go build main.go
+go ./main.go
+```

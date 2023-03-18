@@ -44,10 +44,12 @@ func Run() {
 			userRoutes.GET("/find-all", userController.FindAll)
 			userRoutes.PUT("/profile", userController.Update)
 			userRoutes.POST("/import", userController.Import)
+			userRoutes.POST("/export", userController.Export)
 		}
 	}
 
 	routes.NoRoute(exception.NotFoundRoute())
+	routes.Use(gin.Recovery())
 	if os.Getenv("RUNNING_PORT") == "" {
 		log.Println("listening and serving on default port :8080")
 		routes.Run()

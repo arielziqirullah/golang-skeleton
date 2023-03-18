@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	logs "github.com/sirupsen/logrus"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -28,6 +29,7 @@ func SetUpDatabaseConnection() *gorm.DB {
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		helper.LogIfError(fmt.Errorf("failed to create connection to database, Error : %v", err))
+		logs.Fatal("failed to create connection to database, Error : %v", err)
 	}
 
 	//function to config database connection
@@ -36,9 +38,12 @@ func SetUpDatabaseConnection() *gorm.DB {
 
 	// Auto Migrate
 	if os.Getenv("MIGRATION") == "true" {
+		log.Println("[run migration database]")
 		migrationTable(db)
+		log.Println("[successfully run migration database]")
 	}
 
+	log.Println("[successfully load database conenction]")
 	return db
 }
 

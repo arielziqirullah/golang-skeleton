@@ -13,6 +13,7 @@ import (
 
 type UserRepository interface {
 	InsertUser(user entity.User) entity.User
+	InsertUsers(users []entity.User) []entity.User
 	UpdateUser(user entity.User) entity.User
 	VerifyCredential(email string, password string) interface{}
 	IsDuplicateEmail(email string) (tx *gorm.DB)
@@ -20,6 +21,7 @@ type UserRepository interface {
 	ProfileUser(userID string) entity.User
 	FindAll(user *entity.User, pagination *pagination.Pagination, search *user.SearchUser) (*[]entity.User, error)
 	CountAll(search *user.SearchUser) (*int64, error)
+	ExportGetData(user *entity.User, search *user.SearchUser) (*[]entity.User, error)
 }
 
 type userConnection struct {
@@ -36,6 +38,14 @@ func (db *userConnection) InsertUser(user entity.User) entity.User {
 	user.Password = hashAndSalt([]byte(user.Password))
 	db.connection.Save(&user)
 	return user
+}
+
+func (db *userConnection) InsertUsers(users []entity.User) []entity.User {
+	for _, user := range users {
+		user.Password = hashAndSalt([]byte(user.Password))
+		db.connection.Save(&user)
+	}
+	return users
 }
 
 func (db *userConnection) UpdateUser(user entity.User) entity.User {
@@ -83,6 +93,21 @@ func (db *userConnection) FindAll(user *entity.User, pagination *pagination.Pagi
 
 	offset := (pagination.Page - 1) * pagination.Limit
 	queryBuider := db.connection.Limit(pagination.Limit).Offset(offset).Order(pagination.Sort)
+	if search.SearchName != "" {
+		queryBuider.Where("name LIKE ?", "%"+search.SearchName+"%")
+	}
+	result := queryBuider.Model(&entity.User{}).Where(user).Find(&users)
+	if result.Error != nil {
+		msg := result.Error
+		return nil, msg
+	}
+	return &users, nil
+}
+
+func (db *userConnection) ExportGetData(user *entity.User, search *user.SearchUser) (*[]entity.User, error) {
+	var users []entity.User
+
+	queryBuider := db.connection
 	if search.SearchName != "" {
 		queryBuider.Where("name LIKE ?", "%"+search.SearchName+"%")
 	}

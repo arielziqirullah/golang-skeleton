@@ -22,6 +22,7 @@ type UserController interface {
 	Profile(ctx *gin.Context)
 	FindAll(ctx *gin.Context)
 	Import(ctx *gin.Context)
+	Export(ctx *gin.Context)
 }
 
 type userController struct {
@@ -131,41 +132,66 @@ func (userController *userController) FindAll(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
+// api import csv file to database
 func (userController *userController) Import(ctx *gin.Context) {
+	log.Println("[start controller | userController.Import]")
+	authHeader := ctx.GetHeader("Authorization")
+	authHeader = strings.Split(authHeader, "Bearer ")[1]
+	_, err := userController.jwtService.ValidateToken(authHeader)
+	helper.LogIfError(err)
 
-	// authHeader := ctx.GetHeader("Authorization")
-	// authHeader = strings.Split(authHeader, "Bearer ")[1]
-	// _, err := userController.jwtService.ValidateToken(authHeader)
-	// if err != nil {
-	// 	helper.LogIfError(err)
-	// 	response := helper.BuildErrorResponse(err.Error(), http.StatusBadRequest, helper.EmptyObj{})
-	// 	ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
-	// 	return
-	// }
+	file, err := ctx.FormFile("file")
+	if err != nil {
+		log.Println(err.Error())
+		res := helper.BuildErrorResponse("failed to process request", http.StatusBadRequest, helper.EmptyObj{})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, res)
+		return
+	}
 
-	// sourceFile, err := ctx.FormFile("file")
-	// if err != nil {
-	// 	helper.LogIfError(err)
-	// 	response := helper.BuildErrorResponse(err.Error(), http.StatusBadRequest, helper.EmptyObj{})
-	// 	ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
-	// 	return
-	// }
+	userController.userService.Import(file)
+	response := helper.BuildResponse(true, "OK", http.StatusOK, helper.EmptyObj{})
+	ctx.JSON(http.StatusOK, response)
+}
 
-	// file, err := sourceFile.Open()
-	// if err != nil {
-	// 	helper.LogIfError(err)
-	// 	response := helper.BuildErrorResponse(err.Error(), http.StatusBadRequest, helper.EmptyObj{})
-	// 	ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
-	// 	return
-	// }
+// export csv file to api
+func (userController *userController) Export(ctx *gin.Context) {
+	log.Println("[start controller | userController.Export]")
+	authHeader := ctx.GetHeader("Authorization")
+	authHeader = strings.Split(authHeader, "Bearer ")[1]
+	_, err := userController.jwtService.ValidateToken(authHeader)
+	helper.LogIfError(err)
 
-	// defer file.Close()
+	var search user.SearchUser
+	errSearch := ctx.ShouldBind(&search)
+	if errSearch != nil {
+		log.Println(errSearch.Error())
+		res := helper.BuildErrorResponse("failed to process request", http.StatusBadRequest, helper.EmptyObj{})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, res)
+		return
+	}
 
-	// records, err := csv.NewReader(file).ReadAll()
-	// if err != nil {
-	// 	helper.LogIfError(err)
-	// 	response := helper.BuildErrorResponse(err.Error(), http.StatusBadRequest, helper.EmptyObj{})
-	// 	ctx.AbortWithStatusJSON(http.StatusBadRequest, response)
-	// 	return
-	// }
+	var users entity.User
+	userList, err := userController.userService.ExportGetData(&users, &search)
+	if err != nil {
+		log.Println(err.Error())
+		res := helper.BuildErrorResponse("failed to process request", http.StatusBadRequest, helper.EmptyObj{})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, res)
+		return
+	}
+
+	buf, err := userController.userService.Export(userList)
+	if err != nil {
+		log.Println(err.Error())
+		res := helper.BuildErrorResponse("failed to process request", http.StatusBadRequest, helper.EmptyObj{})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, res)
+		return
+	}
+
+	// Set the response headers
+	ctx.Header("Content-Description", "File Transfer")
+	ctx.Header("Content-Disposition", "attachment; filename=users.csv")
+	ctx.Header("Content-Type", "text/csv")
+
+	// Write the CSV data to the response
+	ctx.Data(http.StatusOK, "text/csv", buf.Bytes())
 }
